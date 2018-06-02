@@ -11,6 +11,7 @@ import jdbc.JDBC;
 import model.Product;
 import model.Role;
 import model.User;
+import session.UserSession;
 
 import java.net.URL;
 import java.sql.Connection;
@@ -24,8 +25,11 @@ import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 public class AdminPaneController implements Initializable {
+
     private static final String GET_ALL_USERS_QUERY = "SELECT * FROM users WHERE role <> 'admin'";
     private static final String GET_ALL_PRODUCTS_QUERY = "SELECT * FROM products";
+    private static final String UPDATE_ALL_PRODUCTS_QUERY =
+            "UPDATE products SET name = ?, manufacturer = ?, cost = ?, country = ?, description = ?, maskAccess = ? WHERE idProducts = ?";
 
     public TableView table;
     public ComboBox usersComboBox;
@@ -37,14 +41,16 @@ public class AdminPaneController implements Initializable {
     public TableColumn<Product, String> countryColumn;
     public TableColumn<Product, String> descriptionColumn;
     private List<User> users;
+    private List<Product> products;
 
     @SuppressWarnings("unchecked")
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         users = getAllUsers();
         usersComboBox.getItems().addAll(users.stream().map(User::getLogin).collect(Collectors.toCollection(ArrayList::new)));
+
         accessColumn.setCellValueFactory(new PropertyValueFactory<>("Доступ"));
-        final Callback<TableColumn<Product, Boolean>, TableCell<Product, Boolean>> cellFactory =
+        Callback<TableColumn<Product, Boolean>, TableCell<Product, Boolean>> cellFactory =
                 CheckBoxTableCell.forTableColumn(accessColumn);
         accessColumn.setCellFactory(column -> {
             TableCell<Product, Boolean> cell = cellFactory.call(column);
@@ -64,8 +70,46 @@ public class AdminPaneController implements Initializable {
             Optional<User> optionalUser = users.stream().filter(user ->
                     user.getLogin().equals(usersCB.getSelectionModel().getSelectedItem())).findAny();
             if (optionalUser.isPresent()) {
-                long idUser = optionalUser.get().getId();
-                table.getItems().addAll(getAllProducts(idUser));
+                UserSession.idOfSelectedUser = optionalUser.get().getId();
+                products = getAllProducts(UserSession.idOfSelectedUser);
+                //TODO: создать клон products. Один запомнить в поле, другой установить в таблицу
+                table.getItems().addAll(products);
+            }
+        });
+
+        saveButton.setOnAction(event -> {
+            List<Product> products = table.getItems();
+            try (Connection connection = JDBC.getConnection();
+                 PreparedStatement preparedStatement = connection
+                         .prepareStatement(UPDATE_ALL_PRODUCTS_QUERY)) {
+                for (Product product : products) {
+                    Optional<Product> optionalProductFromDB =
+                            this.products.stream().filter(p -> p.getId() == product.getId()).findAny();
+                    if (optionalProductFromDB.isPresent()) {
+                        Product productFromDB = optionalProductFromDB.get();
+                        System.out.println(productFromDB);
+                        if (productFromDB.getAccess() != product.getAccess()) {
+                            try {
+                                int cost = Integer.parseInt(product.getCost());
+                                long maskAccess = product.getAccess() ?
+                                        product.getMaskAccess() + (1 << UserSession.idOfSelectedUser) :
+                                        product.getMaskAccess() - (1 << UserSession.idOfSelectedUser);
+                                preparedStatement.setString(1, product.getName());
+                                preparedStatement.setString(2, product.getManufacturer());
+                                preparedStatement.setInt(3, cost);
+                                preparedStatement.setString(4, product.getCountry());
+                                preparedStatement.setString(5, product.getDescription());
+                                preparedStatement.setLong(6, maskAccess);
+                                preparedStatement.setLong(7, product.getId());
+                                preparedStatement.executeUpdate();
+                            } catch (NumberFormatException ignored) {
+
+                            }
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         });
     }
@@ -93,7 +137,8 @@ public class AdminPaneController implements Initializable {
                 String.valueOf(resultSet.getInt("cost")),
                 resultSet.getString("country"),
                 resultSet.getString("description"),
-                (resultSet.getLong("maskAccess") & (1 << idUser)) > 0
+                (resultSet.getLong("maskAccess") & (1 << idUser)) > 0,
+                resultSet.getLong("maskAccess")
         );
     }
 

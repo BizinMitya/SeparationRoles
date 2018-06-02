@@ -3,6 +3,8 @@ package model;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 
+import java.util.Objects;
+
 public class Product {
 
     private long id;
@@ -24,7 +26,7 @@ public class Product {
         this.maskAccess = maskAccess;
     }
 
-    public Product(long id, String name, String manufacturer, String cost, String country, String description, boolean access) {
+    public Product(long id, String name, String manufacturer, String cost, String country, String description, boolean access, long maskAccess) {
         this.id = id;
         this.name = name;
         this.manufacturer = manufacturer;
@@ -32,6 +34,7 @@ public class Product {
         this.country = country;
         this.description = description;
         setAccess(access);
+        this.maskAccess = maskAccess;
     }
 
     public long getId() {
@@ -94,12 +97,64 @@ public class Product {
         return access;
     }
 
-    public final boolean getAccess() {
+    public boolean getAccess() {
         return accessProperty().get();
     }
 
-    public final void setAccess(boolean active) {
-        accessProperty().set(active);
+    public void setAccess(boolean access) {
+        accessProperty().set(access);
+    }
+
+    @Override
+    public String toString() {
+        return "Product{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", manufacturer='" + manufacturer + '\'' +
+                ", cost='" + cost + '\'' +
+                ", country='" + country + '\'' +
+                ", description='" + description + '\'' +
+                ", maskAccess=" + maskAccess +
+                ", access=" + access +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Product product = (Product) o;
+        return id == product.id &&
+                maskAccess == product.maskAccess &&
+                Objects.equals(name, product.name) &&
+                Objects.equals(manufacturer, product.manufacturer) &&
+                Objects.equals(cost, product.cost) &&
+                Objects.equals(country, product.country) &&
+                Objects.equals(description, product.description) &&
+                Objects.equals(access, product.access);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, manufacturer, cost, country, description, maskAccess, access);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Product clone = (Product) super.clone();
+        clone.setId(this.id);
+        clone.setName(this.name);
+        clone.setManufacturer(this.manufacturer);
+        clone.setCost(this.cost);
+        clone.setCountry(this.country);
+        clone.setDescription(this.description);
+        clone.setMaskAccess(this.maskAccess);
+        clone.setAccess(new SimpleBooleanProperty());
+        return clone;
+    }
+
+    private void setAccess(SimpleBooleanProperty simpleBooleanProperty) {
+        this.access = simpleBooleanProperty;
     }
 
 }
