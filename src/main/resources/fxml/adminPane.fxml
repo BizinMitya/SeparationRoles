@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.cell.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.geometry.Insets?>
+<VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.AdminPaneController">
+    <HBox alignment="CENTER">
+        <padding>
+            <Insets top="10" bottom="10"/>
+        </padding>
+        <ComboBox fx:id="usersComboBox" promptText="Выбрать пользователя"/>
+    </HBox>
+    <TableView fx:id="table" prefHeight="600" editable="true">
+        <columns>
+            <TableColumn prefWidth="114.0" text="id">
+                <cellValueFactory>
+                    <PropertyValueFactory property="id"/>
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn prefWidth="114.0" text="Наименование">
+                <cellValueFactory>
+                    <PropertyValueFactory property="name"/>
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn prefWidth="114.0" text="Производитель">
+                <cellValueFactory>
+                    <PropertyValueFactory property="manufacturer"/>
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn prefWidth="114.0" text="Стоимость">
+                <cellValueFactory>
+                    <PropertyValueFactory property="cost"/>
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn prefWidth="114.0" text="Страна">
+                <cellValueFactory>
+                    <PropertyValueFactory property="country"/>
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn prefWidth="114.0" text="Описание">
+                <cellValueFactory>
+                    <PropertyValueFactory property="description"/>
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="checkboxColumn" prefWidth="114.0" text="Доступ"/>
+        </columns>
+    </TableView>
+    <HBox alignment="CENTER_RIGHT">
+        <padding>
+            <Insets top="10" bottom="10" right="10"/>
+        </padding>
+        <Button fx:id="saveButton" text="Сохранить"/>
+    </HBox>
+</VBox>

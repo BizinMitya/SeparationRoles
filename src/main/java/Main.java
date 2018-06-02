@@ -3,7 +3,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 
 public class Main extends Application {
 
@@ -16,12 +15,12 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("authorizationPane.fxml"));
-        primaryStage.setTitle("Разграничение доступа");
+        Parent root = FXMLLoader.load(getClass().getResource("fxml/authorizationPane.fxml"));
+        primaryStage.setTitle("Авторизация");
         primaryStage.setScene(new Scene(root, WIDTH, HEIGHT));
         primaryStage.setMaximized(false);
         primaryStage.setResizable(false);
-        primaryStage.initStyle(StageStyle.UTILITY);
+        //primaryStage.initStyle(StageStyle.UTILITY);
         primaryStage.show();
     }
 }
