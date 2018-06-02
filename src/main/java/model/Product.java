@@ -1,5 +1,6 @@
 package model;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 
 public class Product {
@@ -7,13 +8,13 @@ public class Product {
     private long id;
     private String name;
     private String manufacturer;
-    private int cost;
+    private String cost;
     private String country;
     private String description;
     private long maskAccess;
-    private SimpleBooleanProperty checkbox;
+    private SimpleBooleanProperty access = new SimpleBooleanProperty();
 
-    public Product(long id, String name, String manufacturer, int cost, String country, String description, long maskAccess) {
+    public Product(long id, String name, String manufacturer, String cost, String country, String description, long maskAccess) {
         this.id = id;
         this.name = name;
         this.manufacturer = manufacturer;
@@ -23,14 +24,14 @@ public class Product {
         this.maskAccess = maskAccess;
     }
 
-    public Product(long id, String name, String manufacturer, int cost, String country, String description, boolean checkbox) {
+    public Product(long id, String name, String manufacturer, String cost, String country, String description, boolean access) {
         this.id = id;
         this.name = name;
         this.manufacturer = manufacturer;
         this.cost = cost;
         this.country = country;
         this.description = description;
-        this.checkbox = new SimpleBooleanProperty(checkbox);
+        setAccess(access);
     }
 
     public long getId() {
@@ -57,11 +58,11 @@ public class Product {
         this.manufacturer = manufacturer;
     }
 
-    public int getCost() {
+    public String getCost() {
         return cost;
     }
 
-    public void setCost(int cost) {
+    public void setCost(String cost) {
         this.cost = cost;
     }
 
@@ -89,15 +90,16 @@ public class Product {
         this.maskAccess = maskAccess;
     }
 
-    public boolean isCheckbox() {
-        return checkbox.get();
+    public BooleanProperty accessProperty() {
+        return access;
     }
 
-    public SimpleBooleanProperty checkboxProperty() {
-        return checkbox;
+    public final boolean getAccess() {
+        return accessProperty().get();
     }
 
-    public void setCheckbox(boolean checkbox) {
-        this.checkbox.set(checkbox);
+    public final void setAccess(boolean active) {
+        accessProperty().set(active);
     }
+
 }

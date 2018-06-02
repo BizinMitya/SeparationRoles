@@ -1,13 +1,9 @@
 package controller;
 
 import javafx.fxml.Initializable;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import jdbc.JDBC;
 import model.Product;
-import model.Role;
-import model.User;
 import session.UserSession;
 
 import java.net.URL;
@@ -25,7 +21,7 @@ public class UserPaneController implements Initializable {
         return new Product(resultSet.getLong("idProducts"),
                 resultSet.getString("name"),
                 resultSet.getString("manufacturer"),
-                resultSet.getInt("cost"),
+                String.valueOf(resultSet.getInt("cost")),
                 resultSet.getString("country"),
                 resultSet.getString("description"),
                 resultSet.getLong("maskAccess")

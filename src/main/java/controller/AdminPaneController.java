@@ -1,11 +1,12 @@
 package controller;
 
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.util.Callback;
 import jdbc.JDBC;
 import model.Product;
 import model.Role;
@@ -29,7 +30,12 @@ public class AdminPaneController implements Initializable {
     public TableView table;
     public ComboBox usersComboBox;
     public Button saveButton;
-    public TableColumn<Product, Boolean> checkboxColumn;
+    public TableColumn<Product, Boolean> accessColumn;
+    public TableColumn<Product, String> nameColumn;
+    public TableColumn<Product, String> manufacturerColumn;
+    public TableColumn<Product, String> costColumn;
+    public TableColumn<Product, String> countryColumn;
+    public TableColumn<Product, String> descriptionColumn;
     private List<User> users;
 
     @SuppressWarnings("unchecked")
@@ -37,8 +43,21 @@ public class AdminPaneController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         users = getAllUsers();
         usersComboBox.getItems().addAll(users.stream().map(User::getLogin).collect(Collectors.toCollection(ArrayList::new)));
-        checkboxColumn.setCellFactory(o -> new CheckBoxTableCell<>());
+        accessColumn.setCellValueFactory(new PropertyValueFactory<>("Доступ"));
+        final Callback<TableColumn<Product, Boolean>, TableCell<Product, Boolean>> cellFactory =
+                CheckBoxTableCell.forTableColumn(accessColumn);
+        accessColumn.setCellFactory(column -> {
+            TableCell<Product, Boolean> cell = cellFactory.call(column);
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
+        accessColumn.setCellValueFactory(cellData -> cellData.getValue().accessProperty());
 
+        nameColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        manufacturerColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        costColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        countryColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        descriptionColumn.setCellFactory(TextFieldTableCell.forTableColumn());
 
         usersComboBox.setOnAction(event -> {
             ComboBox usersCB = (ComboBox) event.getSource();
@@ -71,7 +90,7 @@ public class AdminPaneController implements Initializable {
         return new Product(resultSet.getLong("idProducts"),
                 resultSet.getString("name"),
                 resultSet.getString("manufacturer"),
-                resultSet.getInt("cost"),
+                String.valueOf(resultSet.getInt("cost")),
                 resultSet.getString("country"),
                 resultSet.getString("description"),
                 (resultSet.getLong("maskAccess") & (1 << idUser)) > 0
