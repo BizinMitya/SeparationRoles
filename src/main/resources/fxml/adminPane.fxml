@@ -11,7 +11,7 @@
         <padding>
             <Insets top="10" bottom="10"/>
         </padding>
-        <ComboBox fx:id="usersComboBox" promptText="Выбрать пользователя"/>
+        <ComboBox fx:id="usersComboBox" onAction="#selectUser" promptText="Выбрать пользователя"/>
     </HBox>
     <TableView fx:id="table" prefHeight="600" editable="true">
         <columns>
@@ -48,10 +48,14 @@
             <TableColumn fx:id="accessColumn" prefWidth="114.0" text="Доступ"/>
         </columns>
     </TableView>
-    <HBox alignment="CENTER_RIGHT">
+    <HBox alignment="CENTER" spacing="50">
         <padding>
-            <Insets top="10" bottom="10" right="10"/>
+            <Insets top="10" bottom="10"/>
         </padding>
-        <Button fx:id="saveButton" text="Сохранить"/>
+        <Button fx:id="saveButton" onAction="#save" text="Сохранить"/>
+        <padding>
+            <Insets top="10" bottom="10"/>
+        </padding>
+        <Button fx:id="logoutButton" onAction="#logout" text="Выйти"/>
     </HBox>
 </VBox>

@@ -64,13 +64,13 @@ public class AuthorizationPaneController implements Initializable {
                 if (!resultSet.next()) {
                     errorText.setText("Неверный логин/пароль!");
                 } else {
-                    UserSession.user = createUserFromResultSet(resultSet);
+                    UserSession.loginUser = createUserFromResultSet(resultSet);
                     Stage stage = (Stage) errorText.getParent().getScene().getWindow();
                     stage.setTitle("Разграничение доступа");
                     stage.setMaximized(false);
                     stage.setResizable(false);
                     Scene scene;
-                    if (UserSession.user.getRole().equals(Role.admin)) {
+                    if (UserSession.loginUser.getRole().equals(Role.admin)) {
                         scene = new Scene(FXMLLoader.load(getClass().getResource("/fxml/adminPane.fxml")),
                                 WIDTH, HEIGHT);
                     } else {

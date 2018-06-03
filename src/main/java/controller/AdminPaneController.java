@@ -1,5 +1,9 @@
 package controller;
 
+import handlers.Handlers;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -40,15 +44,22 @@ public class AdminPaneController implements Initializable {
     public TableColumn<Product, String> costColumn;
     public TableColumn<Product, String> countryColumn;
     public TableColumn<Product, String> descriptionColumn;
+    public Button logoutButton;
     private List<User> users;
-    private List<Product> products;
 
-    @SuppressWarnings("unchecked")
     @Override
+    @SuppressWarnings("unchecked")
     public void initialize(URL location, ResourceBundle resources) {
         users = getAllUsers();
         usersComboBox.getItems().addAll(users.stream().map(User::getLogin).collect(Collectors.toCollection(ArrayList::new)));
+        initializeTable();
+    }
 
+    private boolean hasAccessCurrentUser(long maskAccess) {
+        return (maskAccess & (1 << UserSession.selectedUser.getId())) > 0;
+    }
+
+    private void initializeTable() {
         accessColumn.setCellValueFactory(new PropertyValueFactory<>("Доступ"));
         Callback<TableColumn<Product, Boolean>, TableCell<Product, Boolean>> cellFactory =
                 CheckBoxTableCell.forTableColumn(accessColumn);
@@ -58,64 +69,28 @@ public class AdminPaneController implements Initializable {
             return cell;
         });
         accessColumn.setCellValueFactory(cellData -> cellData.getValue().accessProperty());
+        accessColumn.setOnEditCommit((TableColumn.CellEditEvent<Product, Boolean> t)
+                -> t.getTableView().getItems().get(t.getTablePosition().getRow()).setAccess(t.getNewValue()));
 
         nameColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        nameColumn.setOnEditCommit((TableColumn.CellEditEvent<Product, String> t)
+                -> t.getTableView().getItems().get(t.getTablePosition().getRow()).setName(t.getNewValue()));
         manufacturerColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        manufacturerColumn.setOnEditCommit((TableColumn.CellEditEvent<Product, String> t)
+                -> t.getTableView().getItems().get(t.getTablePosition().getRow()).setManufacturer(t.getNewValue()));
         costColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        costColumn.setOnEditCommit((TableColumn.CellEditEvent<Product, String> t)
+                -> t.getTableView().getItems().get(t.getTablePosition().getRow()).setCost(t.getNewValue()));
         countryColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        countryColumn.setOnEditCommit((TableColumn.CellEditEvent<Product, String> t)
+                -> t.getTableView().getItems().get(t.getTablePosition().getRow()).setCountry(t.getNewValue()));
         descriptionColumn.setCellFactory(TextFieldTableCell.forTableColumn());
-
-        usersComboBox.setOnAction(event -> {
-            ComboBox usersCB = (ComboBox) event.getSource();
-            Optional<User> optionalUser = users.stream().filter(user ->
-                    user.getLogin().equals(usersCB.getSelectionModel().getSelectedItem())).findAny();
-            if (optionalUser.isPresent()) {
-                UserSession.idOfSelectedUser = optionalUser.get().getId();
-                products = getAllProducts(UserSession.idOfSelectedUser);
-                //TODO: создать клон products. Один запомнить в поле, другой установить в таблицу
-                table.getItems().addAll(products);
-            }
-        });
-
-        saveButton.setOnAction(event -> {
-            List<Product> products = table.getItems();
-            try (Connection connection = JDBC.getConnection();
-                 PreparedStatement preparedStatement = connection
-                         .prepareStatement(UPDATE_ALL_PRODUCTS_QUERY)) {
-                for (Product product : products) {
-                    Optional<Product> optionalProductFromDB =
-                            this.products.stream().filter(p -> p.getId() == product.getId()).findAny();
-                    if (optionalProductFromDB.isPresent()) {
-                        Product productFromDB = optionalProductFromDB.get();
-                        System.out.println(productFromDB);
-                        if (productFromDB.getAccess() != product.getAccess()) {
-                            try {
-                                int cost = Integer.parseInt(product.getCost());
-                                long maskAccess = product.getAccess() ?
-                                        product.getMaskAccess() + (1 << UserSession.idOfSelectedUser) :
-                                        product.getMaskAccess() - (1 << UserSession.idOfSelectedUser);
-                                preparedStatement.setString(1, product.getName());
-                                preparedStatement.setString(2, product.getManufacturer());
-                                preparedStatement.setInt(3, cost);
-                                preparedStatement.setString(4, product.getCountry());
-                                preparedStatement.setString(5, product.getDescription());
-                                preparedStatement.setLong(6, maskAccess);
-                                preparedStatement.setLong(7, product.getId());
-                                preparedStatement.executeUpdate();
-                            } catch (NumberFormatException ignored) {
-
-                            }
-                        }
-                    }
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        });
+        descriptionColumn.setOnEditCommit((TableColumn.CellEditEvent<Product, String> t)
+                -> t.getTableView().getItems().get(t.getTablePosition().getRow()).setDescription(t.getNewValue()));
     }
 
-    private List<Product> getAllProducts(long idUser) {
-        List<Product> products = new ArrayList<>();
+    private ObservableList<Product> getAllProducts(long idUser) {
+        ObservableList<Product> products = FXCollections.observableArrayList();
         try (Connection connection = JDBC.getConnection();
              PreparedStatement preparedStatement = connection
                      .prepareStatement(GET_ALL_PRODUCTS_QUERY)) {
@@ -166,4 +141,49 @@ public class AdminPaneController implements Initializable {
         return users;
     }
 
+    public void save(ActionEvent actionEvent) {
+        @SuppressWarnings("unchecked") List<Product> products = table.getItems();
+        try (Connection connection = JDBC.getConnection();
+             PreparedStatement preparedStatement = connection
+                     .prepareStatement(UPDATE_ALL_PRODUCTS_QUERY)) {
+            for (Product product : products) {
+                try {
+                    long maskAccess = product.getMaskAccess();
+                    if (hasAccessCurrentUser(product.getMaskAccess()) /*права в базе, т.к. maskAccess не меняется на UI*/
+                            ^ product.getAccess() /*измененные права*/) {
+                        maskAccess = product.getAccess() ?
+                                product.getMaskAccess() + (1 << UserSession.selectedUser.getId()) :
+                                product.getMaskAccess() - (1 << UserSession.selectedUser.getId());
+                    }
+                    int cost = Integer.parseInt(product.getCost());
+                    preparedStatement.setString(1, product.getName());
+                    preparedStatement.setString(2, product.getManufacturer());
+                    preparedStatement.setInt(3, cost);
+                    preparedStatement.setString(4, product.getCountry());
+                    preparedStatement.setString(5, product.getDescription());
+                    preparedStatement.setLong(6, maskAccess);
+                    preparedStatement.setLong(7, product.getId());
+                    preparedStatement.executeUpdate();
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void selectUser(ActionEvent actionEvent) {
+        ComboBox usersCB = (ComboBox) actionEvent.getSource();
+        Optional<User> optionalUser = users.stream().filter(user ->
+                user.getLogin().equals(usersCB.getSelectionModel().getSelectedItem())).findAny();
+        if (optionalUser.isPresent()) {
+            UserSession.selectedUser = optionalUser.get();
+            table.getItems().addAll(getAllProducts(UserSession.selectedUser.getId()));
+        }
+    }
+
+    public void logout(ActionEvent actionEvent) {
+        Handlers.logout(actionEvent);
+    }
 }
