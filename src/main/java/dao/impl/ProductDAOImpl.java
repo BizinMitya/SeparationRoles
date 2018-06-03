@@ -24,7 +24,7 @@ public class ProductDAOImpl implements ProductDAO {
     private static final String UPDATE_PRODUCT_QUERY =
             "UPDATE products SET name = ?, manufacturer = ?, cost = ?, country = ?, description = ?, maskAccess = ? WHERE idProducts = ?";
     private static final String REMOVE_PRODUCT = "DELETE FROM Products WHERE idProducts = ?";
-    private static final String GET_DATA_FOR_USER_BY_USER_ID_QUERY = "SELECT * FROM products WHERE (maskAccess & (1 << ?)) > 0";
+    //private static final String GET_DATA_FOR_USER_BY_USER_ID_QUERY = "SELECT * FROM products WHERE (maskAccess & (1 << ?)) > 0";
     private static final String INSERT_PRODUCT =
             "INSERT INTO Products (name, manufacturer, cost, country, description, maskAccess) VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -101,7 +101,7 @@ public class ProductDAOImpl implements ProductDAO {
              PreparedStatement preparedStatement = connection
                      .prepareStatement(REMOVE_PRODUCT)) {
             preparedStatement.setInt(1, id);
-            return preparedStatement.execute();
+            return !preparedStatement.execute();
         } catch (SQLException e) {
             LOGGER.error(e.getMessage(), e);
         }
@@ -119,7 +119,7 @@ public class ProductDAOImpl implements ProductDAO {
         );
     }
 
-    @Override
+    /*@Override
     public List<Product> getDataForUserById(int idUser) {
         List<Product> products = new ArrayList<>();
         try (Connection connection = JDBC.getConnection();
@@ -135,6 +135,20 @@ public class ProductDAOImpl implements ProductDAO {
             LOGGER.error(e.getMessage(), e);
         }
         return products;
+    }*/
+
+    @Override
+    public List<Product> getDataForUserById(int idUser) {
+        List<Product> products = getAllProductsForUser(idUser);
+        List<Product> newProducts = new ArrayList<>();
+
+        for (Product product :
+                products) {
+            if (new BigInteger(product.getMaskAccess(),16).testBit(idUser)) {
+                newProducts.add(product);
+            }
+        }
+        return newProducts;
     }
 
     @Override

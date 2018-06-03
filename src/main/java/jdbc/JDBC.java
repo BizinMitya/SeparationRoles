@@ -9,8 +9,8 @@ public class JDBC {
 
     private static final MysqlDataSource dataSource;
     private static final String SCHEMA = "roles";
-    private static final String USER = "root";
-    private static final String PASSWORD = "root";
+    private static final String USER = "univ";
+    private static final String PASSWORD = "1234";
     private static final String HOST = "localhost";
     private static final String PORT = "3306";
     private static final String URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + SCHEMA + "?useSSL=true";

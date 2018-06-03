@@ -9,7 +9,7 @@ CREATE TABLE `products` (
   `cost`         int(10)        NOT NULL,
   `country`      varchar(45)    NOT NULL,
   `description`  varchar(45)    NOT NULL,
-  `maskAccess`   varchar(65535) NOT NULL,
+  `maskAccess`   varchar(10000) NOT NULL,
   PRIMARY KEY (`idProducts`)
 )
   ENGINE = InnoDB
