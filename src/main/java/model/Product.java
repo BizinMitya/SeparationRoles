@@ -3,20 +3,18 @@ package model;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 
-import java.util.Objects;
-
 public class Product {
 
-    private long id;
+    private int id;
     private String name;
     private String manufacturer;
     private String cost;
     private String country;
     private String description;
-    private long maskAccess;
+    private String maskAccess;
     private SimpleBooleanProperty access = new SimpleBooleanProperty();
 
-    public Product(long id, String name, String manufacturer, String cost, String country, String description, long maskAccess) {
+    public Product(int id, String name, String manufacturer, String cost, String country, String description, String maskAccess) {
         this.id = id;
         this.name = name;
         this.manufacturer = manufacturer;
@@ -26,7 +24,7 @@ public class Product {
         this.maskAccess = maskAccess;
     }
 
-    public Product(long id, String name, String manufacturer, String cost, String country, String description, boolean access, long maskAccess) {
+    public Product(int id, String name, String manufacturer, String cost, String country, String description, boolean access, String maskAccess) {
         this.id = id;
         this.name = name;
         this.manufacturer = manufacturer;
@@ -37,11 +35,11 @@ public class Product {
         this.maskAccess = maskAccess;
     }
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -85,11 +83,11 @@ public class Product {
         this.description = description;
     }
 
-    public long getMaskAccess() {
+    public String getMaskAccess() {
         return maskAccess;
     }
 
-    public void setMaskAccess(long maskAccess) {
+    public void setMaskAccess(String maskAccess) {
         this.maskAccess = maskAccess;
     }
 
@@ -117,40 +115,6 @@ public class Product {
                 ", maskAccess=" + maskAccess +
                 ", access=" + access +
                 '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Product product = (Product) o;
-        return id == product.id &&
-                maskAccess == product.maskAccess &&
-                Objects.equals(name, product.name) &&
-                Objects.equals(manufacturer, product.manufacturer) &&
-                Objects.equals(cost, product.cost) &&
-                Objects.equals(country, product.country) &&
-                Objects.equals(description, product.description) &&
-                Objects.equals(access, product.access);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name, manufacturer, cost, country, description, maskAccess, access);
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        Product clone = (Product) super.clone();
-        clone.setId(this.id);
-        clone.setName(this.name);
-        clone.setManufacturer(this.manufacturer);
-        clone.setCost(this.cost);
-        clone.setCountry(this.country);
-        clone.setDescription(this.description);
-        clone.setMaskAccess(this.maskAccess);
-        clone.setAccess(new SimpleBooleanProperty());
-        return clone;
     }
 
     private void setAccess(SimpleBooleanProperty simpleBooleanProperty) {

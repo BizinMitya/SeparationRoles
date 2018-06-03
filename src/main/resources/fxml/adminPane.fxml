@@ -5,8 +5,9 @@
 <?import javafx.scene.control.cell.*?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
 <VBox xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8"
-      fx:controller="controller.AdminPaneController">
+      fx:controller="controller.AdminPaneController" styleClass="root">
     <HBox alignment="CENTER">
         <padding>
             <Insets top="10" bottom="10"/>
@@ -52,10 +53,17 @@
         <padding>
             <Insets top="10" bottom="10"/>
         </padding>
-        <Button fx:id="saveButton" onAction="#save" text="Сохранить"/>
+        <Button fx:id="updateButton" onAction="#update" text="Обновить" disable="true"/>
+        <padding>
+            <Insets top="10" bottom="10"/>
+        </padding>
+        <Button fx:id="insertButton" onAction="#insert" text="Добавить" disable="true"/>
         <padding>
             <Insets top="10" bottom="10"/>
         </padding>
         <Button fx:id="logoutButton" onAction="#logout" text="Выйти"/>
     </HBox>
+    <stylesheets>
+        <URL value="@../css/style.css"/>
+    </stylesheets>
 </VBox>

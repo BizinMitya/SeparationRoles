@@ -1,8 +1,12 @@
 package controller;
 
+import dao.ProductDAO;
+import dao.UserDAO;
+import dao.impl.ProductDAOImpl;
+import dao.impl.UserDAOImpl;
 import handlers.Handlers;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -11,17 +15,11 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.util.Callback;
-import jdbc.JDBC;
 import model.Product;
-import model.Role;
 import model.User;
 import session.UserSession;
 
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -30,14 +28,9 @@ import java.util.stream.Collectors;
 
 public class AdminPaneController implements Initializable {
 
-    private static final String GET_ALL_USERS_QUERY = "SELECT * FROM users WHERE role <> 'admin'";
-    private static final String GET_ALL_PRODUCTS_QUERY = "SELECT * FROM products";
-    private static final String UPDATE_ALL_PRODUCTS_QUERY =
-            "UPDATE products SET name = ?, manufacturer = ?, cost = ?, country = ?, description = ?, maskAccess = ? WHERE idProducts = ?";
-
     public TableView table;
     public ComboBox usersComboBox;
-    public Button saveButton;
+    public Button updateButton;
     public TableColumn<Product, Boolean> accessColumn;
     public TableColumn<Product, String> nameColumn;
     public TableColumn<Product, String> manufacturerColumn;
@@ -45,20 +38,22 @@ public class AdminPaneController implements Initializable {
     public TableColumn<Product, String> countryColumn;
     public TableColumn<Product, String> descriptionColumn;
     public Button logoutButton;
+    public Button insertButton;
     private List<User> users;
+    private ProductDAO productDAO;
+    private UserDAO userDAO;
 
     @Override
     @SuppressWarnings("unchecked")
     public void initialize(URL location, ResourceBundle resources) {
-        users = getAllUsers();
+        productDAO = new ProductDAOImpl();
+        userDAO = new UserDAOImpl();
+        users = userDAO.getAllUsersWithoutAdmin();
         usersComboBox.getItems().addAll(users.stream().map(User::getLogin).collect(Collectors.toCollection(ArrayList::new)));
         initializeTable();
     }
 
-    private boolean hasAccessCurrentUser(long maskAccess) {
-        return (maskAccess & (1 << UserSession.selectedUser.getId())) > 0;
-    }
-
+    @SuppressWarnings("unchecked")
     private void initializeTable() {
         accessColumn.setCellValueFactory(new PropertyValueFactory<>("Доступ"));
         Callback<TableColumn<Product, Boolean>, TableCell<Product, Boolean>> cellFactory =
@@ -87,89 +82,32 @@ public class AdminPaneController implements Initializable {
         descriptionColumn.setCellFactory(TextFieldTableCell.forTableColumn());
         descriptionColumn.setOnEditCommit((TableColumn.CellEditEvent<Product, String> t)
                 -> t.getTableView().getItems().get(t.getTablePosition().getRow()).setDescription(t.getNewValue()));
-    }
 
-    private ObservableList<Product> getAllProducts(long idUser) {
-        ObservableList<Product> products = FXCollections.observableArrayList();
-        try (Connection connection = JDBC.getConnection();
-             PreparedStatement preparedStatement = connection
-                     .prepareStatement(GET_ALL_PRODUCTS_QUERY)) {
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                while (resultSet.next()) {
-                    products.add(createProductFromResultSet(resultSet, idUser));
+        table.setRowFactory(
+                (Callback<TableView<Product>, TableRow<Product>>) tableView -> {
+                    TableRow<Product> row = new TableRow<>();
+                    ContextMenu contextMenu = new ContextMenu();
+                    MenuItem removeMenuItem = new MenuItem("Удалить");
+                    removeMenuItem.setOnAction(event -> {
+                        Product product = row.getItem();
+                        if (productDAO.removeProduct(product.getId())) {
+                            table.getItems().remove(product);
+                        }
+                    });
+                    contextMenu.getItems().add(removeMenuItem);
+                    row.contextMenuProperty().bind(
+                            Bindings.when(row.emptyProperty())
+                                    .then((ContextMenu) null)
+                                    .otherwise(contextMenu)
+                    );
+                    return row;
                 }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return products;
-    }
-
-    private Product createProductFromResultSet(ResultSet resultSet, long idUser) throws SQLException {
-        return new Product(resultSet.getLong("idProducts"),
-                resultSet.getString("name"),
-                resultSet.getString("manufacturer"),
-                String.valueOf(resultSet.getInt("cost")),
-                resultSet.getString("country"),
-                resultSet.getString("description"),
-                (resultSet.getLong("maskAccess") & (1 << idUser)) > 0,
-                resultSet.getLong("maskAccess")
         );
     }
 
-    private User createUserFromResultSet(ResultSet resultSet) throws SQLException {
-        return new User(resultSet.getLong("idUser"),
-                resultSet.getString("login"),
-                resultSet.getString("password"),
-                Role.valueOf(resultSet.getString("role"))
-        );
-    }
-
-    private List<User> getAllUsers() {
-        List<User> users = new ArrayList<>();
-        try (Connection connection = JDBC.getConnection();
-             PreparedStatement preparedStatement = connection
-                     .prepareStatement(GET_ALL_USERS_QUERY)) {
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                while (resultSet.next()) {
-                    users.add(createUserFromResultSet(resultSet));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return users;
-    }
-
-    public void save(ActionEvent actionEvent) {
+    public void update(ActionEvent actionEvent) {
         @SuppressWarnings("unchecked") List<Product> products = table.getItems();
-        try (Connection connection = JDBC.getConnection();
-             PreparedStatement preparedStatement = connection
-                     .prepareStatement(UPDATE_ALL_PRODUCTS_QUERY)) {
-            for (Product product : products) {
-                try {
-                    long maskAccess = product.getMaskAccess();
-                    if (hasAccessCurrentUser(product.getMaskAccess()) /*права в базе, т.к. maskAccess не меняется на UI*/
-                            ^ product.getAccess() /*измененные права*/) {
-                        maskAccess = product.getAccess() ?
-                                product.getMaskAccess() + (1 << UserSession.selectedUser.getId()) :
-                                product.getMaskAccess() - (1 << UserSession.selectedUser.getId());
-                    }
-                    int cost = Integer.parseInt(product.getCost());
-                    preparedStatement.setString(1, product.getName());
-                    preparedStatement.setString(2, product.getManufacturer());
-                    preparedStatement.setInt(3, cost);
-                    preparedStatement.setString(4, product.getCountry());
-                    preparedStatement.setString(5, product.getDescription());
-                    preparedStatement.setLong(6, maskAccess);
-                    preparedStatement.setLong(7, product.getId());
-                    preparedStatement.executeUpdate();
-                } catch (NumberFormatException ignored) {
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        productDAO.updateProducts(products);
     }
 
     @SuppressWarnings("unchecked")
@@ -178,12 +116,24 @@ public class AdminPaneController implements Initializable {
         Optional<User> optionalUser = users.stream().filter(user ->
                 user.getLogin().equals(usersCB.getSelectionModel().getSelectedItem())).findAny();
         if (optionalUser.isPresent()) {
+            updateButton.setDisable(false);
+            insertButton.setDisable(false);
             UserSession.selectedUser = optionalUser.get();
-            table.getItems().addAll(getAllProducts(UserSession.selectedUser.getId()));
+            table.getItems().clear();
+            table.getItems().addAll(FXCollections.observableArrayList(
+                    productDAO.getAllProductsForUser(UserSession.selectedUser.getId())));
         }
     }
 
     public void logout(ActionEvent actionEvent) {
         Handlers.logout(actionEvent);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void insert(ActionEvent actionEvent) {
+        Handlers.insert(actionEvent);
+        table.getItems().clear();
+        table.getItems().addAll(FXCollections.observableArrayList(
+                productDAO.getAllProductsForUser(UserSession.selectedUser.getId())));
     }
 }

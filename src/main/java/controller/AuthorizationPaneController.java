@@ -1,5 +1,7 @@
 package controller;
 
+import dao.UserDAO;
+import dao.impl.UserDAOImpl;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
@@ -13,6 +15,7 @@ import javafx.stage.Stage;
 import jdbc.JDBC;
 import model.Role;
 import model.User;
+import org.apache.log4j.Logger;
 import session.UserSession;
 
 import java.io.IOException;
@@ -24,7 +27,8 @@ import java.sql.SQLException;
 import java.util.ResourceBundle;
 
 public class AuthorizationPaneController implements Initializable {
-    private static final String CHECK_USERS_QUERY = "SELECT * FROM Users WHERE login = ? AND password = ?";
+
+    private static final Logger LOGGER = Logger.getLogger(AuthorizationPaneController.class);
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
 
@@ -33,9 +37,11 @@ public class AuthorizationPaneController implements Initializable {
     public Text errorText;
     public Button loginButton;
     public GridPane gridPane;
+    private UserDAO userDAO;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        userDAO = new UserDAOImpl();
         loginButton.setOnAction(event -> authorization());
         gridPane.setOnKeyPressed(event -> {
             if (event.getCode().equals(KeyCode.ENTER)) {
@@ -44,45 +50,34 @@ public class AuthorizationPaneController implements Initializable {
         });
     }
 
-    private User createUserFromResultSet(ResultSet resultSet) throws SQLException {
-        return new User(resultSet.getLong("idUser"),
-                resultSet.getString("login"),
-                resultSet.getString("password"),
-                Role.valueOf(resultSet.getString("role"))
-        );
-    }
-
     private void authorization() {
-        String login = loginTextField.getText();
-        String password = passwordTextField.getText();
-        try (Connection connection = JDBC.getConnection();
-             PreparedStatement preparedStatement = connection
-                     .prepareStatement(CHECK_USERS_QUERY)) {
-            preparedStatement.setString(1, login);
-            preparedStatement.setString(2, password);
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                if (!resultSet.next()) {
-                    errorText.setText("Неверный логин/пароль!");
+        try {
+            String login = loginTextField.getText();
+            String password = passwordTextField.getText();
+            User user = userDAO.getUser(login, password);
+            if (user == null) {
+                errorText.setText("Неверный логин/пароль!");
+            } else {
+                UserSession.loginUser = user;
+                Stage stage = (Stage) errorText.getParent().getScene().getWindow();
+                stage.setTitle("Разграничение доступа");
+                stage.setMaximized(false);
+                stage.setResizable(false);
+                Scene scene;
+                if (UserSession.loginUser.getRole().equals(Role.admin)) {
+                    scene = new Scene(FXMLLoader.load(getClass().getResource("/fxml/adminPane.fxml")),
+                            WIDTH, HEIGHT);
                 } else {
-                    UserSession.loginUser = createUserFromResultSet(resultSet);
-                    Stage stage = (Stage) errorText.getParent().getScene().getWindow();
-                    stage.setTitle("Разграничение доступа");
-                    stage.setMaximized(false);
-                    stage.setResizable(false);
-                    Scene scene;
-                    if (UserSession.loginUser.getRole().equals(Role.admin)) {
-                        scene = new Scene(FXMLLoader.load(getClass().getResource("/fxml/adminPane.fxml")),
-                                WIDTH, HEIGHT);
-                    } else {
-                        scene = new Scene(FXMLLoader.load(getClass().getResource("/fxml/userPane.fxml")),
-                                WIDTH, HEIGHT);
-                    }
-                    stage.setScene(scene);
+                    scene = new Scene(FXMLLoader.load(getClass().getResource("/fxml/userPane.fxml")),
+                            WIDTH, HEIGHT);
                 }
+                stage.setScene(scene);
             }
-        } catch (SQLException | IOException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage(), e);
             errorText.setText("Произошла ошибка в программе!");
         }
     }
 }
+
+

@@ -37,7 +37,7 @@
           GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2"/>
 
     <stylesheets>
-        <URL value="@../css/login.css"/>
+        <URL value="@../css/style.css"/>
     </stylesheets>
 
 </GridPane>

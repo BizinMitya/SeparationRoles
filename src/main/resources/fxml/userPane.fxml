@@ -5,8 +5,9 @@
 <?import javafx.scene.control.cell.*?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
 <VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="controller.UserPaneController">
+      fx:controller="controller.UserPaneController" styleClass="root">
     <TableView fx:id="table" prefHeight="600">
         <columns>
             <TableColumn prefWidth="133.0" text="id">
@@ -47,4 +48,7 @@
         </padding>
         <Button fx:id="logoutButton" onAction="#logout" text="Выйти"/>
     </HBox>
+    <stylesheets>
+        <URL value="@../css/style.css"/>
+    </stylesheets>
 </VBox>
