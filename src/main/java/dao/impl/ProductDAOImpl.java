@@ -1,7 +1,6 @@
 package dao.impl;
 
 import dao.ProductDAO;
-import javafx.collections.FXCollections;
 import jdbc.JDBC;
 import model.Product;
 import model.dto.ProductRecord;
@@ -24,7 +23,6 @@ public class ProductDAOImpl implements ProductDAO {
     private static final String UPDATE_PRODUCT_QUERY =
             "UPDATE products SET name = ?, manufacturer = ?, cost = ?, country = ?, description = ?, maskAccess = ? WHERE idProducts = ?";
     private static final String REMOVE_PRODUCT = "DELETE FROM Products WHERE idProducts = ?";
-    //private static final String GET_DATA_FOR_USER_BY_USER_ID_QUERY = "SELECT * FROM products WHERE (maskAccess & (1 << ?)) > 0";
     private static final String INSERT_PRODUCT =
             "INSERT INTO Products (name, manufacturer, cost, country, description, maskAccess) VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -119,24 +117,6 @@ public class ProductDAOImpl implements ProductDAO {
         );
     }
 
-    /*@Override
-    public List<Product> getDataForUserById(int idUser) {
-        List<Product> products = new ArrayList<>();
-        try (Connection connection = JDBC.getConnection();
-             PreparedStatement preparedStatement = connection
-                     .prepareStatement(GET_DATA_FOR_USER_BY_USER_ID_QUERY)) {
-            preparedStatement.setLong(1, idUser);
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                while (resultSet.next()) {
-                    products.add(createProductFromResultSet(resultSet));
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.error(e.getMessage(), e);
-        }
-        return products;
-    }*/
-
     @Override
     public List<Product> getDataForUserById(int idUser) {
         List<Product> products = getAllProductsForUser(idUser);
@@ -144,7 +124,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         for (Product product :
                 products) {
-            if (new BigInteger(product.getMaskAccess(),16).testBit(idUser)) {
+            if (new BigInteger(product.getMaskAccess(), 16).testBit(idUser)) {
                 newProducts.add(product);
             }
         }
